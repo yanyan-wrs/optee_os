@@ -73,7 +73,8 @@
 #define PADDR_INVALID		ULONG_MAX
 
 #ifdef CFG_BOOT_SECONDARY_REQUEST
-uint32_t ns_entry_addrs[CFG_TEE_CORE_NB_CORE] __data;
+uint32_t ns_entry_addrs[CFG_TEE_CORE_NB_CORE] __early_bss;
+uint32_t spin_table[CFG_TEE_CORE_NB_CORE] __early_bss;
 #endif
 
 #ifdef CFG_BOOT_SYNC_CPU
@@ -662,3 +663,21 @@ void generic_boot_init_secondary(unsigned long nsec_entry)
 	init_secondary_helper(nsec_entry);
 }
 #endif
+
+#ifdef CFG_BOOT_SECONDARY_REQUEST
+int generic_boot_core(size_t core_idx, uint32_t entry)
+{
+	if ((core_idx == 0) || (core_idx >= CFG_TEE_CORE_NB_CORE))
+		return -1;
+
+	/* set secondary cores' NS entry addresses */
+
+	ns_entry_addrs[core_idx] = entry;
+	spin_table[core_idx] = 1;
+
+	dsb();
+	sev();
+
+	return 0;
+}
+#endif /* CFG_BOOT_SECONDARY_REQUEST */

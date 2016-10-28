@@ -368,6 +368,11 @@ static inline void dsb(void)
 	asm volatile ("dsb");
 }
 
+static inline void sev(void)
+{
+	asm volatile ("sev");
+}
+
 /* Address translate privileged write translation (current state secure PL1) */
 static inline void write_ats1cpw(uint32_t va)
 {

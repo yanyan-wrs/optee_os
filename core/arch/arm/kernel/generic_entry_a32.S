@@ -473,10 +473,22 @@ UNWIND(	.cantunwind)
 	bl	cpu_is_ready
 
 #if defined (CFG_BOOT_SECONDARY_REQUEST)
+spin:
+	/* spin until secondary boot request */
+	wfe
+	bl  get_core_pos
+	ldr r1, =spin_table
+	add r1, r1, r0, lsl #2	/* size of uint32_t */
+	dsb
+	ldr r0, [r1]
+	cmp	r0, #0
+	beq	spin
+
 	/* get ns entry from ns_entry_addrs array */
 	bl  get_core_pos
 	ldr r1, =ns_entry_addrs
 	add r1, r1, r0, lsl #2	/* size of uint32_t */
+	dsb
 	ldr r0, [r1]
 #else
 	mov	r0, r5		/* ns-entry address */

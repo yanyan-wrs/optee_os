@@ -30,6 +30,7 @@
 #include <tee/entry_fast.h>
 #include <optee_msg.h>
 #include <sm/optee_smc.h>
+#include <kernel/generic_boot.h>
 #include <kernel/tee_l2cc_mutex.h>
 #include <kernel/misc.h>
 #include <mm/core_mmu.h>
@@ -127,6 +128,14 @@ static void tee_entry_enable_shm_cache(struct thread_smc_args *args)
 		args->a0 = OPTEE_SMC_RETURN_EBUSY;
 }
 
+static void tee_entry_boot_secondary(struct thread_smc_args *args)
+{
+	if (generic_boot_core(args->a1, (uint32_t)(args->a3)) == 0)
+		args->a0 = OPTEE_SMC_RETURN_OK;
+	else
+		args->a0 = OPTEE_SMC_RETURN_EBADCMD;
+}
+
 void tee_entry_fast(struct thread_smc_args *args)
 {
 	switch (args->a0) {
@@ -164,6 +173,11 @@ void tee_entry_fast(struct thread_smc_args *args)
 	case OPTEE_SMC_ENABLE_SHM_CACHE:
 		tee_entry_enable_shm_cache(args);
 		break;
+#ifdef CFG_BOOT_SECONDARY_REQUEST
+	case OPTEE_SMC_BOOT_SECONDARY:
+		tee_entry_boot_secondary(args);
+		break;
+#endif /* CFG_BOOT_SECONDARY_REQUEST */
 
 	default:
 		args->a0 = OPTEE_SMC_RETURN_UNKNOWN_FUNCTION;

@@ -56,6 +56,8 @@ void arm_cl2_enable(vaddr_t pl310);
 
 #ifdef CFG_BOOT_SECONDARY_REQUEST
 extern uint32_t ns_entry_addrs[];
+extern uint32_t spin_table[];
+int generic_boot_core(size_t core_idx, uint32_t entry);
 #endif
 
 extern uint8_t __text_init_start[];
