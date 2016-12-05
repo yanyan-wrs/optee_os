@@ -69,11 +69,11 @@
  *
  * 64-bit systems on the other hand can use full 64-bit physical pointers.
  */
-
 #define PADDR_INVALID		ULONG_MAX
 
-#ifdef CFG_BOOT_SECONDARY_REQUEST
-uint32_t ns_entry_addrs[CFG_TEE_CORE_NB_CORE] __data;
+#if defined(CFG_BOOT_SECONDARY_REQUEST)
+static paddr_t ns_entry_addrs[CFG_TEE_CORE_NB_CORE] __early_bss;
+static uint32_t spin_table[CFG_TEE_CORE_NB_CORE] __early_bss;
 #endif
 
 #ifdef CFG_BOOT_SYNC_CPU
@@ -87,6 +87,11 @@ uint32_t sem_cpu_sync[CFG_TEE_CORE_NB_CORE] __early_bss;
 
 /* May be overridden in plat-$(PLATFORM)/main.c */
 __weak void main_init_gic(void)
+{
+}
+
+/* May be overridden in plat-$(PLATFORM)/main.c */
+__weak void main_secondary_init_gic(void)
 {
 }
 
@@ -622,6 +627,7 @@ static void init_secondary_helper(unsigned long nsec_entry)
 
 	thread_init_per_cpu();
 	init_sec_mon(nsec_entry);
+	main_secondary_init_gic();
 	init_vfp_sec();
 	init_vfp_nsec();
 
@@ -654,5 +660,34 @@ void generic_boot_init_primary(unsigned long pageable_part,
 void generic_boot_init_secondary(unsigned long nsec_entry)
 {
 	init_secondary_helper(nsec_entry);
+}
+#endif
+
+#if defined(CFG_BOOT_SECONDARY_REQUEST)
+int generic_boot_core_release(size_t core_idx, paddr_t entry)
+{
+	if (!core_idx || core_idx >= CFG_TEE_CORE_NB_CORE)
+		return -1;
+
+	ns_entry_addrs[core_idx] = entry;
+	dmb();
+	spin_table[core_idx] = 1;
+	dsb();
+	sev();
+
+	return 0;
+}
+
+/*
+ * spin until secondary boot request, then returns with
+ * the secondary core entry address.
+ */
+paddr_t generic_boot_core_hpen(void)
+{
+	do {
+		wfe();
+	} while (!spin_table[get_core_pos()]);
+	dmb();
+	return ns_entry_addrs[get_core_pos()];
 }
 #endif

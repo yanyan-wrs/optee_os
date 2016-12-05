@@ -351,6 +351,13 @@ static inline uint32_t read_ifsr(void)
 	return ifsr;
 }
 
+static inline void write_scr(uint32_t scr)
+{
+	asm volatile ("mcr	p15, 0, %[scr], c1, c1, 0"
+			: : [scr] "r" (scr)
+	);
+}
+
 static inline void isb(void)
 {
 	asm volatile ("isb");
@@ -359,6 +366,21 @@ static inline void isb(void)
 static inline void dsb(void)
 {
 	asm volatile ("dsb");
+}
+
+static inline void dmb(void)
+{
+	asm volatile ("dmb");
+}
+
+static inline void sev(void)
+{
+	asm volatile ("sev");
+}
+
+static inline void wfe(void)
+{
+	asm volatile ("wfe");
 }
 
 /* Address translate privileged write translation (current state secure PL1) */
@@ -533,6 +555,11 @@ static inline uint32_t read_cntfrq(void)
 
 	asm volatile("mrc p15, 0, %0, c14, c0, 0" : "=r" (frq));
 	return frq;
+}
+
+static inline void write_cntfrq(uint32_t frq)
+{
+	asm volatile("mcr p15, 0, %0, c14, c0, 0" : : "r" (frq));
 }
 
 static __always_inline uint32_t read_pc(void)
